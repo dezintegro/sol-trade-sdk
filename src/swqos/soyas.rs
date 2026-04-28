@@ -103,10 +103,13 @@ pub struct SoyasClient {
 impl SoyasClient {
     pub async fn new(rpc_url: String, endpoint_string: String, api_key: String) -> Result<Self> {
         let rpc_client = SolanaRpcClient::new(rpc_url);
-        let keypair = Keypair::try_from_base58_string(api_key.trim()).map_err(|e| {
+        let api_key_trimmed = api_key.trim().to_string();
+        let keypair = std::panic::catch_unwind(|| {
+            Keypair::from_base58_string(&api_key_trimmed)
+        })
+        .map_err(|_| {
             anyhow::anyhow!(
-                "Soyas api_token 无法解析为 Solana keypair base58（QUIC mTLS 用）: {}",
-                e
+                "Soyas api_token 无法解析为 Solana keypair base58（QUIC mTLS 用）"
             )
         })?;
         let (cert, key) = generate_client_tls_credentials(&keypair)?;
